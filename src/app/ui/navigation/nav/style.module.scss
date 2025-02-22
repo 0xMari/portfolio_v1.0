@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+.menu{
+    height: 100vh;
+    background-color: var(--foreground);
+    position: fixed;
+    right: 0;
+    top: 0;
+    color: white;
+    z-index: 1;
+    font-family: 'Outfit', serif;
+    font-optical-sizing: auto;
+    font-style: normal;
+
+    .body{
+        box-sizing: border-box;
+        height: 100%;
+        padding: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .nav{
+            display: flex;
+            flex-direction: column;
+            font-size: 56px;
+            gap: 12px;
+            margin-top: 80px;
+
+            .header{
+                color: rgb(153, 153, 153);
+                border-bottom: 1px solid rgb(153, 153, 153);
+                text-transform: uppercase;
+                font-size: 11px;
+                margin-bottom: 40px;
+                font-family: "Playfair Display", serif;
+                font-optical-sizing: auto;
+                font-style: normal;
+            }
+
+            a{
+                text-decoration: none;
+                color: white;
+                font-weight: 300;
+            }
+            
+        }
+    }
+    .footer{
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        font-size: 12px;
+        gap: 40px;
+    }
+}

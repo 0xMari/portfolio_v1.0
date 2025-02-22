@@ -12,6 +12,11 @@ export default {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      fontFamily: {
+        mont : 'var(--font-montserrat)',
+        playFair: 'var(--font-play-fair)',
+        outFit: 'var(--font-outfit)',
+      },
     },
   },
   plugins: [],
