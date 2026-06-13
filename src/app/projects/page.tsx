@@ -15,9 +15,15 @@ const prjList = [
     href: 'https://github.com/0xMari/fairytown',
   },
   {
+    name: 'Blobs',
+    year: '2026',
+    category: ['webgl','3d', 'playground'],
+    href: 'https://v3-murex.vercel.app/',
+  },
+  {
     name: 'music sphere [WIP, still]',
     year: '2024',
-    category: ['webgl', '3d', 'glsl shader'],
+    category: ['webgl', '3d', 'glsl shader', 'playground'],
     href: '/projects/sphere',
   },
   
