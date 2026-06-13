@@ -3,16 +3,16 @@ import { playFair } from "../ui/font"
 
 const prjList = [
   {
-    name: 'ai chatbot',
-    year: '2025',
-    category: ['dev'],
-    href: '/',
+    name: 'Aethr [WIP/just a landing atm]',
+    year: '2026',
+    category: ['dev', 'ai', 'agents'],
+    href: 'https://aethr-travel.vercel.app/',
   },
   {
-    name: 'skin-pedia',
-    year: '2025',
-    category: ['dev'],
-    href: '/',
+    name: 'Fairytown',
+    year: '2026',
+    category: ['webgl','3d','dev', 'procedural world'],
+    href: 'https://github.com/0xMari/fairytown',
   },
   {
     name: 'music sphere [WIP, still]',
@@ -20,12 +20,7 @@ const prjList = [
     category: ['webgl', '3d', 'glsl shader'],
     href: '/projects/sphere',
   },
-  {
-    name: 'lorem ipsum',
-    year: '2024',
-    category: ['3d'],
-    href: '/',
-  },
+  
 ]
 
 export default function Page() {

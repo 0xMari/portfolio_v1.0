@@ -68,7 +68,7 @@ function NoiseSphere() {
         if(!meshRef.current) return
         console.log("Icosahedron ref:", meshRef.current); 
 
-        const gui = new Pane()
+        const gui = new Pane() as any
         gui.element.classList.add("tweakpane");
         // gui.domElement.style.position = "absolute";
         // gui.domElement.style.top = "20px"; // Adjust vertical position
@@ -80,7 +80,7 @@ function NoiseSphere() {
         })
 
         f.addBinding(settings, "scale", {min: 0.1, max:2, step:0.1})
-        .on('change', (v)=>{
+        .on('change', (v: any)=>{
             setSettings((prev) => ({...prev, size: v.value}))
             if(meshRef.current){
                 meshRef.current.scale.set(v.value,v.value,v.value)
@@ -89,7 +89,7 @@ function NoiseSphere() {
         
             
         f.addBinding(settings, 'color', {picker:'inline', expanded:true})
-        .on('change', (v) =>{
+        .on('change', (v: any) =>{
             setSettings((prev) => ({...prev, color: v.value}))
             if(meshRef.current){
                 (meshRef.current.material as THREE.MeshPhysicalMaterial).color.set(v.value)

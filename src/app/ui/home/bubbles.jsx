@@ -161,26 +161,7 @@ export function Bubbles(){
     
     return(
         <div className='w-full h-full'>
-            <Canvas camera={{ position: [0, 0, 20], fov: fov }}>
-                <color attach="background" args={['#f0f0f0']} />
-                <ambientLight intensity={10} args={['#ffffff']}/>
-                <Suspense fallback={<Loader/>}>
-                  <ScrollControls pages={3} damping={0.2}>
-                    <Lens>
-                      <Scroll>
-                        <Typo />
-                        <Blob />
-                        <Preload />
-                      </Scroll>
-                      <Scroll html>
-                        <HtmlSection/>
-                      </Scroll>
-                    </Lens>
-                  </ScrollControls>
-                </Suspense>
-                
-            </Canvas>
-          
+            hello
         </div>
 
        

@@ -1,62 +1,65 @@
 'use client'
 import { outfit, playFair } from '@/app/ui/font'
 import { ArrowDownIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
-import Flower from '@/app/ui/flower'
 import Link from 'next/link'
-import Cute from '../ui/about/something'
+import Flower from '../ui/about/flower'
+import Blobs from '../ui/about/blobs'
+import Wire from '../ui/about/wireframe'
+import { PillMarkSvg } from '../ui/about/lines'
 
 export default function Page() {
     return(
-      <div className={`mt-12 md:mt-16 w-screen h-full grid grid-cols-2 md:grid-cols-3 grid-rows-6 gap-2 p-8 ${outfit.className}`}>
-        <div className='col-span-2 row-span-1 md:row-span-2 border border-foreground p-2 md:p-4 rounded-xl flex flex-row md:items-end md:justify-end'>
-          <p className='text-xl md:text-7xl xl:text-9xl whitespace-pre-wrap text-justify tracking wide'>
-            Creative  web  developer   based   in  
-            <span className='px-2 md:px-12'><img src='./mikita-yo-zIG7e6bhZaA-unsplash.jpg' className='hidden md:inline h-[4.3rem] xl:h-[6rem] w-[10rem] xl:w-[15rem] border-4 border-pink-400 object-cover'/></span>
-            Milan
-            <GlobeAltIcon className='h-[2rem] text-pink-400 md:h-[4.3rem] xl:h-[6rem] inline pl-12'/>
-          </p>
+      <div className={`w-screen h-full grid grid-cols-2 lg:grid-cols-6 grid-rows-7 lg:grid-rows-6 gap-3 p-8 ${outfit.className}`}>
+        <div className=' hidden lg:block lg:row-start-1 lg:row-span-2 lg:rounded-[999px]'>
+          <Flower/>
         </div>
-
-        <div className='row-span-2 md:row-span-3 border border-foreground p-4 rounded-xl'>Avatar</div>
-
-        <div className='row-span-2 md:row-span-3 border border-foreground p-4 rounded-xl flex flex-col h-full justify-between'>
-          <p className='text-xl md:text-7xl xl:text-9xl text-justify' style={{textAlignLast: 'justify'}}>WHERE TO</p>
-          <div className='flex flex-col md:flex-row justify-between px-2 md:px-8 xl:text-2xl'>
-            <Link href='https://github.com/0xMari' className='hover:text-pink-400'>github</Link>
-            <Link href='https://www.linkedin.com/in/maria-jyate/' className='hover:text-pink-400'>linkedin</Link>
-          </div>
-          <p className='text-xl md:text-7xl xl:text-9xl text-justify' style={{textAlignLast: 'justify'}}>FIND ME</p>
+        <div className=' col-span-2 lg:col-start-2 lg:col-span-2 row-span-1 lg:row-span-1 '>
+          <PillMarkSvg/>
         </div>
-
-        <div className='col-span-2 md:col-span-1 md:row-span-2 border border-foreground p-2 md:p-4 rounded-xl'>
-          <div className='flex flex-col h-full justify-center text-justify'>
-            <p className='uppercase text-sm md:text-lg xl:text-xl self-end'> <ArrowDownIcon className='inline h-[0.6rem] md:h-[0.7rem] xl:h-[1rem]'/> fun facts </p>
-            <p className='text-sm md:text-2xl/10 xl:text-5xl pl-2 md:pl-0 md:py-8 '>
-              Rofan manhwa avid reader and skincare maniac.<br/>
-              I like glitter, TTRPG, and good food.
-            </p>
-          </div>
-          
+        <div className='border border-black hidden lg:block lg:col-start-4 lg:col-span-2 lg:row-start-1 lg:row-span-2 lg:rounded-[999px_999px_0_0]'>
+          <img src='/imgs/transStar.png' alt='' className='w-[120%] h-auto object-fill'/>
         </div>
-
-        <div className='border border-foreground p-4 rounded-xl col-span-2 md:col-span-1 row-span-2 md:row-span-3'>
-          <h1 className={`${playFair.className} text-xl xl:text-3xl md:pb-6`}>tech stack</h1>
-          <div className='flex flex-row flex-wrap gap-2 xl:text-2xl'>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>TypeScript</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>NextJS</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>ReactJS</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>ThreeJS</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>HTML/CSS</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>WebGL</div>
-            <div className='md:border border-foreground px-2 md:px-8 xl:px-16 md:py-2 xl:py-4 rounded-[50%]'>Python</div>
+        <div className='border border-black hidden lg:block lg:row-start-1 lg:row-span-6 lg:rounded-[999px]'><Blobs/></div>
+        <div className='border border-black hidden overflow-hidden lg:block lg:row-start-3 lg:row-span-4 lg:rounded-[999px]'>
+          <Wire/>
+        </div>
+        <div className='border border-black col-span-2 lg:col-start-2 lg:col-span-2 row-span-3 lg:row-start-2 lg:row-span-3 rounded-[15px_15px_15px_15px]'>
+          <div className='p-4 lg:p-8 text-sm'>
+          <span className={`${playFair.className} lg:text-3xl/10`}>Hi, I'm Maria</span><br/>
+          <p className='lg:text-xl/7 text-justify'>
+          I currently work in fintech building online payment systems (it pays for my travelling adventures).<br/>
+          Outside of work i like to experiment with creative development and immersive experiences, at least when I am not out and about with my friends.
+          </p></div>
+        </div>
+        <div className='border border-black col-span-1 lg:col-start-4 lg:col-span-2 lg:row-start-3 row-span-3 lg:row-span-2 rounded-[15px_15px_15px_15px]'>
+          <div className='lg:text-left p-1 lg:p-10 text-sm lg:text-xl/6'>
+            <span className={`${playFair.className} lg:text-2xl`}>Currently exploring</span><br/>
+            ✷ AI workspaces & agents<br/>
+            ✷ Procedural generation<br/>
+            ✷ Interactive storytelling<br/>
+            ✷ My next vacation spot
           </div>
         </div>
-
-        <div className='md:row-span-2 border border-foreground p-4 rounded-xl items-center'>
-          <Cute />
+        <div className='border border-black col-span-1 lg:col-start-2 lg:col-span-2 lg:row-start-5 row-span-3 lg:row-span-2  rounded-[15px_15px_15px_15px] lg:rounded-[0_0_0_999px]'>
+          <div className='lg:text-left p-1 lg:p-10 text-sm lg:text-xl/6'><p>
+            <span className={`${playFair.className} lg:text-xl`}>Things I enjoy:</span><br/>
+            <span className='lg:pl-[clamp(0.50rem,2vw,0.75rem)]'>✷ an unreasonable skincare routine</span><br/>
+            <span className='lg:pl-[clamp(1rem,2.5vw,1.75rem)]'>✷  Ro-fan manhwa</span><br/>
+            <span className='lg:pl-[clamp(1.75rem,4vw,3rem)]'>✷  glitter</span><br/>
+            <span className='lg:pl-[clamp(2.75rem,5.5vw,4.50rem)]'>✷  TTRPG</span><br/>
+            <span className='lg:pl-[clamp(3.75rem,7vw,6.25rem)]'>✷  good food</span>
+          </p></div>
         </div>
-
-        <div className='border border-foreground p-4 rounded-xl'>7- currently listening to</div>
+        <div className='border border-black col-span-2 lg:col-start-4 lg:col-span-2 lg:row-start-5 row-span-1 lg:row-span-2 rounded-[0_0_30px_30px]'>
+          <div className='pt-20 pb-20'>
+            <p className={`${playFair.className} lg:text-2xl text-center`}>Elsewhere</p><br/>
+            <div className='flex flex-row justify-around'>
+              <a>github</a>
+              <a>linkedin</a>
+              <a>cv</a>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
