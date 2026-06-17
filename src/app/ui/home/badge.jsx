@@ -1,85 +1,21 @@
 'use client'
 
-import * as THREE from 'three'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { Canvas } from '@react-three/fiber'
 import { Environment, useGLTF } from '@react-three/drei'
+import { BadgeScene } from './badge_scene'
+
 
 const MODEL_PATH = '/badge7.glb'
 const INITIAL_Y = -0.62
 const SPRING_STIFFNESS = 0.09
 const SPRING_DAMPING = 0.78
-const CORD_SEGMENTS = 28
+
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max)
 }
 
-function BadgeScene({ screenPosition, stageSize }) {
-    const badge = useRef()
-    const cordGeometry = useRef()
-    const cordPositions = useMemo(() => new Float32Array((CORD_SEGMENTS + 1) * 3), [])
-    const { scene } = useGLTF(MODEL_PATH)
-    const viewport = useThree((state) => state.viewport)
-
-    useEffect(() => {
-        const lanyard = scene.getObjectByName('lanyard')
-        if (lanyard) lanyard.visible = false
-    }, [scene])
-
-    useFrame((state) => {
-        if (!badge.current || !cordGeometry.current) return
-
-        const elapsed = state.clock.elapsedTime
-        const worldX = ((screenPosition.x / stageSize.width) - 0.5) * viewport.width
-        const worldY = (0.5 - (screenPosition.y / stageSize.height)) * viewport.height
-
-        badge.current.position.x = worldX - 0.03
-        badge.current.position.y = worldY - 3.3
-        badge.current.rotation.y = Math.sin(elapsed / 2.5) * 0.12
-        badge.current.rotation.x = -0.08 + Math.sin(elapsed / 3) * 0.03
-        badge.current.updateWorldMatrix(true, true)
-
-        const claspAnchor = scene.getObjectByName('clasp_anchor')
-        const end = new THREE.Vector3()
-        if (claspAnchor) {
-            claspAnchor.getWorldPosition(end)
-        } else {
-            badge.current.localToWorld(end.set(0, 4.1, 0.18))
-        }
-
-        const start = new THREE.Vector3(0, viewport.height / 2 + 0.35, end.z)
-        const mid = start.clone().lerp(end, 0.5)
-        const stretch = start.distanceTo(end)
-        mid.y -= Math.min(stretch * 0.035, 0.45)
-
-        const curve = new THREE.QuadraticBezierCurve3(start, mid, end)
-        for (let i = 0; i <= CORD_SEGMENTS; i++) {
-            const point = curve.getPoint(i / CORD_SEGMENTS)
-            const offset = i * 3
-            cordPositions[offset] = point.x
-            cordPositions[offset + 1] = point.y
-            cordPositions[offset + 2] = point.z
-        }
-
-        cordGeometry.current.attributes.position.needsUpdate = true
-        cordGeometry.current.computeBoundingSphere()
-    })
-
-    return (
-        <>
-            <line frustumCulled={false}>
-                <bufferGeometry ref={cordGeometry}>
-                    <bufferAttribute attach="attributes-position" args={[cordPositions, 3]} />
-                </bufferGeometry>
-                <lineBasicMaterial color="#151515" transparent opacity={0.82} />
-            </line>
-            <group ref={badge} scale={1} position={[-0.03, -3.3, 0.14]}>
-                <primitive object={scene} />
-            </group>
-        </>
-    )
-}
 
 export default function Badge() {
     const stageRef = useRef(null)
