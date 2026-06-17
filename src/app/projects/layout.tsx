@@ -7,7 +7,7 @@ export const experimental_ppr = true;
  
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${outfit.className} flex h-screen flex-col justify-between`}>
+    <div className={`${outfit.className} flex min-h-screen flex-col justify-between`}>
         {children}
         
     </div>

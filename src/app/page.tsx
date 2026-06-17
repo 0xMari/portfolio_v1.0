@@ -1,10 +1,12 @@
 'use client'
-import { Bubbles } from "./ui/home/bubbles";
+
+import { outfit } from '@/app/ui/font'
+import Badge from '@/app/ui/home/badge'
 
 export default function Page() {
   return (
-    <div className='w-screen h-screen'>
-      <Bubbles />
+    <div className={`${outfit.className} h-screen w-screen overflow-hidden`}>
+      <Badge />
     </div>
   );
 }

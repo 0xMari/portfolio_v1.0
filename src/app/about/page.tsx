@@ -9,7 +9,7 @@ import { PillMarkSvg } from '../ui/about/lines'
 
 export default function Page() {
     return(
-      <div className={`w-screen h-full grid grid-cols-2 lg:grid-cols-6 grid-rows-7 lg:grid-rows-6 gap-3 p-8 ${outfit.className}`}>
+      <div className={`w-screen lg:h-full grid grid-cols-2 lg:grid-cols-6 grid-rows-7 lg:grid-rows-6 gap-3 p-8 ${outfit.className}`}>
         <div className=' hidden lg:block lg:row-start-1 lg:row-span-2 lg:rounded-[999px]'>
           <Flower/>
         </div>
@@ -26,13 +26,13 @@ export default function Page() {
         <div className='border border-black col-span-2 lg:col-start-2 lg:col-span-2 row-span-3 lg:row-start-2 lg:row-span-3 rounded-[15px_15px_15px_15px]'>
           <div className='p-4 lg:p-8 text-sm'>
           <span className={`${playFair.className} lg:text-3xl/10`}>Hi, I'm Maria</span><br/>
-          <p className='lg:text-xl/7 text-justify'>
+          <p className='lg:text-xl/7 lg:text-justify'>
           I currently work in fintech building online payment systems (it pays for my travelling adventures).<br/>
           Outside of work i like to experiment with creative development and immersive experiences, at least when I am not out and about with my friends.
           </p></div>
         </div>
         <div className='border border-black col-span-1 lg:col-start-4 lg:col-span-2 lg:row-start-3 row-span-3 lg:row-span-2 rounded-[15px_15px_15px_15px]'>
-          <div className='lg:text-left p-1 lg:p-10 text-sm lg:text-xl/6'>
+          <div className='p-4 text-sm leading-6 md:p-6 md:text-base lg:p-10 lg:text-left lg:text-xl/6'>
             <span className={`${playFair.className} lg:text-2xl`}>Currently exploring</span><br/>
             ✷ AI workspaces & agents<br/>
             ✷ Procedural generation<br/>
@@ -41,7 +41,7 @@ export default function Page() {
           </div>
         </div>
         <div className='border border-black col-span-1 lg:col-start-2 lg:col-span-2 lg:row-start-5 row-span-3 lg:row-span-2  rounded-[15px_15px_15px_15px] lg:rounded-[0_0_0_999px]'>
-          <div className='lg:text-left p-1 lg:p-10 text-sm lg:text-xl/6'><p>
+          <div className='p-4 text-sm leading-6 md:p-6 md:text-base lg:p-10 lg:text-left lg:text-xl/6'><p>
             <span className={`${playFair.className} lg:text-xl`}>Things I enjoy:</span><br/>
             <span className='lg:pl-[clamp(0.50rem,2vw,0.75rem)]'>✷ an unreasonable skincare routine</span><br/>
             <span className='lg:pl-[clamp(1rem,2.5vw,1.75rem)]'>✷  Ro-fan manhwa</span><br/>
@@ -51,12 +51,11 @@ export default function Page() {
           </p></div>
         </div>
         <div className='border border-black col-span-2 lg:col-start-4 lg:col-span-2 lg:row-start-5 row-span-1 lg:row-span-2 rounded-[0_0_30px_30px]'>
-          <div className='pt-20 pb-20'>
+          <div className='py-10 md:py-14 lg:py-20'>
             <p className={`${playFair.className} lg:text-2xl text-center`}>Elsewhere</p><br/>
             <div className='flex flex-row justify-around'>
-              <a>github</a>
-              <a>linkedin</a>
-              <a>cv</a>
+              <a className='hover:text-[#f472b6]' href='https://github.com/0xMari'>github</a>
+              <a className='hover:text-[#f472b6]' href='https://www.linkedin.com/in/maria-jyate/'>linkedin</a>
             </div>
           </div>
         </div>

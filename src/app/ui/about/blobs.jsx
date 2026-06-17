@@ -8,6 +8,8 @@ import { Physics, RigidBody, BallCollider } from '@react-three/rapier';
 const MetaBall = ({ color, vec = new THREE.Vector3(), ...props }) => {
   const api = useRef();
   useFrame((state, delta) => {
+    if (!api.current) return
+
     delta = Math.min(delta, 0.1)
     api.current.applyImpulse(
       vec
@@ -28,11 +30,11 @@ const MetaBall = ({ color, vec = new THREE.Vector3(), ...props }) => {
 const Pointer = ({ vec = new THREE.Vector3() }) => {
   const ref = useRef()
   useFrame(({ pointer, viewport }) => {
+    if (!ref.current) return
+
     const { width, height } = viewport.getCurrentViewport()
     vec.set(pointer.x * (width / 2), pointer.y * (height / 2), 0)
-    try {
-      ref.current.setNextKinematicTranslation(vec)
-    } catch (e) {}
+    ref.current.setNextKinematicTranslation(vec)
   })
   return (
     <RigidBody type="kinematicPosition" colliders={false} ref={ref}>
