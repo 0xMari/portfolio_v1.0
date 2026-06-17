@@ -10,6 +10,7 @@ const MODEL_PATH = '/badge7.glb'
 const INITIAL_Y = -0.62
 const SPRING_STIFFNESS = 0.09
 const SPRING_DAMPING = 0.78
+const FALL_SCROLL_THRESHOLD = 0.85
 
 
 function clamp(value, min, max) {
@@ -22,12 +23,14 @@ export default function Badge() {
     const dragLayerRef = useRef(null)
     const dragRef = useRef({ offsetX: 0, offsetY: 0 })
     const isDraggingRef = useRef(false)
+    const badgeModeRef = useRef('attached')
     const positionRef = useRef(null)
     const restPositionRef = useRef(null)
     const velocityRef = useRef({ x: 0, y: 0 })
     const [position, setPosition] = useState(null)
     const [stageSize, setStageSize] = useState({ width: 1, height: 1 })
     const [dragging, setDragging] = useState(false)
+    const [badgeMode, setBadgeMode] = useState('attached')
 
     const setBadgePosition = (nextPosition) => {
         positionRef.current = nextPosition
@@ -94,7 +97,7 @@ export default function Badge() {
             const current = positionRef.current
             const rest = restPositionRef.current
 
-            if (!isDraggingRef.current && current && rest) {
+            if (badgeModeRef.current === 'attached' && !isDraggingRef.current && current && rest) {
                 const velocity = velocityRef.current
                 velocity.x = (velocity.x + (rest.x - current.x) * SPRING_STIFFNESS) * SPRING_DAMPING
                 velocity.y = (velocity.y + (rest.y - current.y) * SPRING_STIFFNESS) * SPRING_DAMPING
@@ -126,6 +129,33 @@ export default function Badge() {
     }, [])
 
     useEffect(() => {
+        const updateBadgeMode = () => {
+            if (window.scrollY >= window.innerHeight * FALL_SCROLL_THRESHOLD) {
+                setBadgeMode('fallen')
+            }
+        }
+
+        updateBadgeMode()
+        window.addEventListener('scroll', updateBadgeMode, { passive: true })
+        window.addEventListener('resize', updateBadgeMode)
+
+        return () => {
+            window.removeEventListener('scroll', updateBadgeMode)
+            window.removeEventListener('resize', updateBadgeMode)
+        }
+    }, [])
+
+    useEffect(() => {
+        badgeModeRef.current = badgeMode
+
+        if (badgeMode === 'fallen') {
+            isDraggingRef.current = false
+            velocityRef.current = { x: 0, y: 0 }
+            setDragging(false)
+        }
+    }, [badgeMode])
+
+    useEffect(() => {
         window.addEventListener('mouseup', stopDragging)
         window.addEventListener('touchend', stopDragging)
         window.addEventListener('blur', stopDragging)
@@ -151,7 +181,7 @@ export default function Badge() {
     const handlePointerDown = (event) => {
         const dragLayer = dragLayerRef.current
         const current = positionRef.current
-        if (!dragLayer || !current) return
+        if (!dragLayer || !current || badgeModeRef.current !== 'attached') return
 
         dragRef.current = {
             offsetX: event.clientX - current.x,
@@ -169,11 +199,11 @@ export default function Badge() {
     }
 
     return (
-        <div ref={stageRef} className="relative h-full min-h-screen w-full overflow-hidden">
+        <div ref={stageRef} className="fixed inset-0 z-10 overflow-hidden">
             <div
                 ref={dragLayerRef}
                 data-testid="badge-drag"
-                className={`absolute inset-0 touch-none select-none ${dragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                className={`absolute inset-0 select-none ${dragging ? 'cursor-grabbing touch-none' : badgeMode === 'attached' ? 'cursor-grab touch-pan-y' : 'cursor-default touch-pan-y'}`}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={stopDragging}
@@ -192,7 +222,7 @@ export default function Badge() {
                         <directionalLight position={[2.5, 4, 4]} intensity={1.5} />
                         <directionalLight position={[-3, -1, 2]} intensity={0.8} color="#bcd7ff" />
                         <Suspense fallback={null}>
-                            {position && <BadgeScene screenPosition={position} stageSize={stageSize} />}
+                            {position && <BadgeScene screenPosition={position} stageSize={stageSize} badgeMode={badgeMode} />}
                             <Environment preset="studio" environmentIntensity={0.2} />
                         </Suspense>
                     </Canvas>

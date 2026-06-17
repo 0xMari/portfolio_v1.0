@@ -9,9 +9,19 @@ const MODEL_PATH = '/badge7.glb'
 const CORD_SEGMENTS = 28
 const CORD_RADIUS = 0.01
 const CORD_RADIAL_SEGMENTS = 8
+const FALL_GRAVITY = 12
+const FLOOR_BOUNCE = 0.18
 
 function createCordGeometry(curve) {
     return new THREE.TubeGeometry(curve, CORD_SEGMENTS, CORD_RADIUS, CORD_RADIAL_SEGMENTS, false)
+}
+
+function getSecondPageFloorY(viewport, stageSize) {
+    const viewportHeight = stageSize.height || 1
+    const scrollY = typeof window === 'undefined' ? 0 : window.scrollY
+    const secondPageBottomY = viewportHeight * 2 - scrollY
+
+    return (0.5 - secondPageBottomY / viewportHeight) * viewport.height + 0.48
 }
 
 function Cord({ badgeRef, scene, viewport }) {
@@ -58,8 +68,10 @@ function Cord({ badgeRef, scene, viewport }) {
 
 }
 
-export function BadgeScene({ screenPosition, stageSize }) {
+export function BadgeScene({ screenPosition, stageSize, badgeMode }) {
     const badge = useRef()
+    const fallVelocity = useRef(0)
+    const landed = useRef(false)
     const { scene } = useGLTF(MODEL_PATH)
     const viewport = useThree((state) => state.viewport)
 
@@ -68,24 +80,66 @@ export function BadgeScene({ screenPosition, stageSize }) {
         if (lanyard) lanyard.visible = false
     }, [scene])
 
-    useFrame((state) => {
+    useEffect(() => {
+        fallVelocity.current = 0
+        landed.current = false
+    }, [badgeMode])
+
+    useFrame((state, delta) => {
         if (!badge.current) return
 
         const elapsed = state.clock.elapsedTime
+        const safeDelta = Math.min(delta, 0.033)
+
+        if (badgeMode === 'fallen') {
+            const floorY = getSecondPageFloorY(viewport, stageSize)
+            const scrollY = typeof window === 'undefined' ? 0 : window.scrollY
+
+            if (landed.current || scrollY < stageSize.height * 0.85) {
+                badge.current.position.y = floorY
+                fallVelocity.current = 0
+                landed.current = true
+            } else {
+                fallVelocity.current -= FALL_GRAVITY * safeDelta
+                badge.current.position.y += fallVelocity.current * safeDelta
+
+                if (badge.current.position.y <= floorY) {
+                    badge.current.position.y = floorY
+
+                    if (Math.abs(fallVelocity.current) > 0.7) {
+                        fallVelocity.current *= -FLOOR_BOUNCE
+                    } else {
+                        fallVelocity.current = 0
+                        landed.current = true
+                    }
+                }
+            }
+
+            badge.current.position.x = THREE.MathUtils.damp(badge.current.position.x, 0, landed.current ? 3 : 1.4, safeDelta)
+            badge.current.position.z = THREE.MathUtils.damp(badge.current.position.z, 0.62, 3, safeDelta)
+            badge.current.rotation.x = THREE.MathUtils.damp(badge.current.rotation.x, -1.32, 4, safeDelta)
+            badge.current.rotation.y = THREE.MathUtils.damp(badge.current.rotation.y, 0.12, 3, safeDelta)
+            badge.current.rotation.z = THREE.MathUtils.damp(badge.current.rotation.z, -0.16, 3, safeDelta)
+            badge.current.updateWorldMatrix(true, true)
+            return
+        }
+
         const worldX = ((screenPosition.x / stageSize.width) - 0.5) * viewport.width
         const worldY = (0.5 - (screenPosition.y / stageSize.height)) * viewport.height
 
         badge.current.position.x = worldX - 0.03
         badge.current.position.y = worldY - 3.3
+        badge.current.position.z = 0.14
         badge.current.rotation.y = Math.sin(elapsed / 2.5) * 0.12
         badge.current.rotation.x = -0.08 + Math.sin(elapsed / 3) * 0.03
+        badge.current.rotation.z = 0
         badge.current.updateWorldMatrix(true, true)
 
     }, -1)
 
     return (
         <>
-            <Cord badgeRef={badge} scene={scene} viewport={viewport}/>
+            {badgeMode === 'attached' && <Cord badgeRef={badge} scene={scene} viewport={viewport}/>}
             <group ref={badge} scale={1} position={[-0.03, -3.3, 0.14]}>
                 <primitive object={scene} />
             </group>
