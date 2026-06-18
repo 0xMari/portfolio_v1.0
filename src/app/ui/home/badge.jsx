@@ -171,6 +171,7 @@ export default function Badge() {
     const [stickyDragging, setStickyDragging] = useState(false)
     const [badgeMode, setBadgeMode] = useState('attached')
     const [activeMobileItem, setActiveMobileItem] = useState(null)
+    const [activeStickyNoteId, setActiveStickyNoteId] = useState(null)
 
     const setBadgePosition = (nextPosition) => {
         positionRef.current = nextPosition
@@ -199,6 +200,7 @@ export default function Badge() {
         isStickyDraggingRef.current = false
         isPagePanningRef.current = false
         draggedStickyNoteIdRef.current = null
+        setActiveStickyNoteId(null)
         setDragging(false)
         setStickyDragging(false)
     }
@@ -383,6 +385,7 @@ export default function Badge() {
             isPagePanningRef.current = false
             draggedStickyNoteIdRef.current = null
             velocityRef.current = { x: 0, y: 0 }
+            setActiveStickyNoteId(null)
             setDragging(false)
             setStickyDragging(false)
         }
@@ -463,6 +466,7 @@ export default function Badge() {
 
         dragLayer.setPointerCapture(pointerId)
         draggedStickyNoteIdRef.current = noteId
+        setActiveStickyNoteId(noteId)
         isStickyDraggingRef.current = true
         setStickyDragging(true)
     }
@@ -632,6 +636,7 @@ export default function Badge() {
                                     stickyNotes={stickyNotes}
                                     mobileDeskMode={mobileDeskMode}
                                     activeMobileItem={activeMobileItem}
+                                    activeStickyNoteId={activeStickyNoteId}
                                 />
                             )}
                             <Environment preset="studio" environmentIntensity={0.2} />

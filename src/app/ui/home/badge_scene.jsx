@@ -82,6 +82,7 @@ export function BadgeScene({
     stickyNotes,
     mobileDeskMode = false,
     activeMobileItem = null,
+    activeStickyNoteId = null,
 }) {
     const badge = useRef()
     const fallVelocity = useRef(0)
@@ -175,6 +176,7 @@ export function BadgeScene({
                 badgeMode={badgeMode}
                 mobileDeskMode={mobileDeskMode}
                 activeMobileItem={activeMobileItem}
+                activeStickyNoteId={activeStickyNoteId}
             />
             <group ref={badge} scale={1} position={[-0.03, -3.3, 0.14]}>
                 <primitive object={scene} />

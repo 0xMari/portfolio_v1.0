@@ -60,7 +60,11 @@ const PILE_FALL_SCROLL_THRESHOLD = 0.3
 const PILE_FALL_GRAVITY = 12
 const PILE_FLOOR_BOUNCE = 0.14
 const LIFTED_NOTE_Z = -0.25
-const ACTIVE_MOBILE_NOTE_Z = 1.18
+const LIFTED_NOTE_Z_STEP = 0.09
+const ACTIVE_NOTE_Z = 1.18
+const PICKUP_ROTATION = [0.08, -0.04, -0.025]
+const PICKUP_LIFT = 0.035
+const ACTIVE_LIFT = 0.055
 const PILE_DESKTOP_POSITION = [-3.15, -1.18, -0.95]
 const PILE_NARROW_POSITION = [0, -1.78, -0.12]
 
@@ -82,7 +86,8 @@ function createNoteTexture(note) {
     canvas.height = 720
 
     const context = canvas.getContext('2d')
-    context.clearRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = note.color
+    context.fillRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = '#1a1a1a'
     context.textBaseline = 'top'
 
@@ -148,14 +153,10 @@ function StickyNotePileBlock({ geometry, material }) {
     )
 }
 
-function TexturedStickyNote({ geometry, noteMaterial, textMaterial, position = [0, 0, 0], rotation = [0, 0, 0] }) {
+function TexturedStickyNote({ geometry, materials, position = [0, 0, 0], rotation = [0, 0, 0] }) {
     return (
         <group position={position} rotation={rotation}>
-            <mesh geometry={geometry} material={noteMaterial} />
-            <mesh position={[0, 0, NOTE_DEPTH / 2 + 0.003]}>
-                <planeGeometry args={[NOTE_WIDTH * 0.9, NOTE_HEIGHT * 0.82]} />
-                <primitive object={textMaterial} attach="material" />
-            </mesh>
+            <mesh geometry={geometry} material={materials} />
         </group>
     )
 }
@@ -175,41 +176,89 @@ function getScrollY() {
 function LiftedStickyNote({
     note,
     geometry,
-    noteMaterial,
-    textMaterial,
+    materials,
     stageSize,
     viewport,
     scale,
     z = LIFTED_NOTE_Z,
+    isActive = false,
+    mobileDeskMode = false,
 }) {
     const liftedNote = useRef()
     const initialPosition = screenToWorld({
         x: note.position.x,
         y: note.position.y - getScrollY(),
     }, stageSize, viewport, z)
+    const liftProgress = useRef(mobileDeskMode ? 1 : 0)
+    const activeProgress = useRef(isActive ? 1 : 0)
+    const initialRotation = mobileDeskMode ? [0, 0, 0] : PICKUP_ROTATION
 
-    useFrame(() => {
+    useFrame((_, delta) => {
         if (!liftedNote.current) return
 
+        const safeDelta = Math.min(delta, 0.033)
         const nextPosition = screenToWorld({
             x: note.position.x,
             y: note.position.y - getScrollY(),
         }, stageSize, viewport, z)
+        const currentPosition = liftedNote.current.position
+        const settle = 1 - liftProgress.current
+        const active = activeProgress.current
+        const dragX = nextPosition[0] - currentPosition.x
+        const dragY = nextPosition[1] - currentPosition.y
+        const dragTiltX = THREE.MathUtils.clamp(dragY * 0.025, -0.035, 0.035) * active
+        const dragTiltY = THREE.MathUtils.clamp(-dragX * 0.025, -0.045, 0.045) * active
+        const dragTiltZ = THREE.MathUtils.clamp(-dragX * 0.018, -0.035, 0.035) * active
 
-        liftedNote.current.position.set(...nextPosition)
+        liftProgress.current = THREE.MathUtils.damp(liftProgress.current, 1, 12, safeDelta)
+        activeProgress.current = THREE.MathUtils.damp(activeProgress.current, isActive ? 1 : 0, 14, safeDelta)
+
+        currentPosition.x = THREE.MathUtils.damp(currentPosition.x, nextPosition[0], isActive ? 28 : 20, safeDelta)
+        currentPosition.y = THREE.MathUtils.damp(currentPosition.y, nextPosition[1], isActive ? 28 : 20, safeDelta)
+        currentPosition.z = THREE.MathUtils.damp(
+            currentPosition.z,
+            nextPosition[2] + active * ACTIVE_LIFT + settle * PICKUP_LIFT,
+            18,
+            safeDelta
+        )
+
+        liftedNote.current.rotation.x = THREE.MathUtils.damp(
+            liftedNote.current.rotation.x,
+            initialRotation[0] * settle + dragTiltX,
+            16,
+            safeDelta
+        )
+        liftedNote.current.rotation.y = THREE.MathUtils.damp(
+            liftedNote.current.rotation.y,
+            initialRotation[1] * settle + dragTiltY,
+            16,
+            safeDelta
+        )
+        liftedNote.current.rotation.z = THREE.MathUtils.damp(
+            liftedNote.current.rotation.z,
+            initialRotation[2] * settle + dragTiltZ,
+            16,
+            safeDelta
+        )
+
+        liftedNote.current.scale.setScalar(THREE.MathUtils.damp(
+            liftedNote.current.scale.x,
+            scale,
+            16,
+            safeDelta
+        ))
     })
 
     return (
         <group
             ref={liftedNote}
             position={initialPosition}
-            rotation={[0, 0, 0]}
+            rotation={initialRotation}
             scale={scale}
         >
             <TexturedStickyNote
                 geometry={geometry}
-                noteMaterial={noteMaterial}
-                textMaterial={textMaterial}
+                materials={materials}
             />
         </group>
     )
@@ -221,6 +270,7 @@ export function StickyNotes({
     badgeMode = 'attached',
     mobileDeskMode = false,
     activeMobileItem = null,
+    activeStickyNoteId = null,
 }) {
     const pile = useRef()
     const pileNotes = useRef()
@@ -237,14 +287,27 @@ export function StickyNotes({
         note.id,
         new THREE.MeshStandardMaterial({ color: note.color, roughness: 0.74 }),
     ])), [])
-    const textMaterials = useMemo(() => new Map(STICKY_NOTES.map((note) => [
-        note.id,
-        new THREE.MeshBasicMaterial({
+    const texturedNoteMaterials = useMemo(() => new Map(STICKY_NOTES.map((note) => {
+        const sideColor = new THREE.Color(note.color).offsetHSL(0, -0.02, -0.06)
+        const sideMaterial = new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.78 })
+        const backMaterial = new THREE.MeshStandardMaterial({ color: note.color, roughness: 0.76 })
+        const frontMaterial = new THREE.MeshBasicMaterial({
             map: createNoteTexture(note),
-            transparent: true,
             toneMapped: false,
-        }),
-    ])), [])
+        })
+
+        return [
+            note.id,
+            [
+                sideMaterial,
+                sideMaterial,
+                sideMaterial,
+                sideMaterial,
+                frontMaterial,
+                backMaterial,
+            ],
+        ]
+    })), [])
     const noteStateById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes])
     const remainingNotes = STICKY_NOTES.filter((note) => !noteStateById.get(note.id)?.lifted)
     const visibleNoteDefinitions = mobileDeskMode
@@ -339,29 +402,30 @@ export function StickyNotes({
                         {topPileNote && (
                             <TexturedStickyNote
                                 geometry={noteGeometry}
-                                noteMaterial={noteMaterials.get(topPileNote.id)}
-                                textMaterial={textMaterials.get(topPileNote.id)}
+                                materials={texturedNoteMaterials.get(topPileNote.id)}
                             />
                         )}
                     </group>
                 </group>
             )}
 
-            {liftedNotes.map((note) => {
+            {liftedNotes.map((note, index) => {
                 const definition = getNoteDefinition(note.id) ?? note.definition
-                const isActiveMobileItem = mobileDeskMode && activeMobileItem === note.id
+                const isActiveNote = activeStickyNoteId === note.id || (mobileDeskMode && activeMobileItem === note.id)
+                const noteZ = LIFTED_NOTE_Z + index * LIFTED_NOTE_Z_STEP
 
                 return (
                     <LiftedStickyNote
                         key={note.id}
                         note={note}
                         geometry={noteGeometry}
-                        noteMaterial={noteMaterials.get(definition.id)}
-                        textMaterial={textMaterials.get(definition.id)}
+                        materials={texturedNoteMaterials.get(definition.id)}
                         stageSize={stageSize}
                         viewport={viewport}
                         scale={isNarrow ? 0.58 : 0.92}
-                        z={isActiveMobileItem ? ACTIVE_MOBILE_NOTE_Z : LIFTED_NOTE_Z}
+                        z={isActiveNote ? ACTIVE_NOTE_Z : noteZ}
+                        isActive={isActiveNote}
+                        mobileDeskMode={mobileDeskMode}
                     />
                 )
             })}
