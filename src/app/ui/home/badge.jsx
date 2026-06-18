@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment, useGLTF } from '@react-three/drei'
 import { BadgeScene } from './badge_scene'
+import { STICKY_NOTES } from './sticky_notes'
 
 
 const MODEL_PATH = '/badge7.glb'
@@ -11,10 +12,72 @@ const INITIAL_Y = -0.62
 const SPRING_STIFFNESS = 0.09
 const SPRING_DAMPING = 0.78
 const FALL_SCROLL_THRESHOLD = 0.85
+const STICKY_NOTE_HITBOX = {
+    desktop: { width: 360, height: 230 },
+    narrow: { width: 230, height: 160 },
+}
 
+function createStickyNoteState() {
+    return STICKY_NOTES.map((note) => ({
+        id: note.id,
+        lifted: false,
+        position: null,
+    }))
+}
 
 function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max)
+}
+
+function getScrollY() {
+    return typeof window === 'undefined' ? 0 : window.scrollY
+}
+
+function getFirstPageViewportPosition(position) {
+    if (!position) return null
+
+    return {
+        x: position.x,
+        y: position.y - getScrollY(),
+    }
+}
+
+function getStickyNoteRestPosition(stageSize) {
+    const isNarrow = stageSize.width < 700
+
+    return {
+        x: stageSize.width * (isNarrow ? 0.5 : 0.23),
+        y: stageSize.height * (isNarrow ? 0.78 : 0.71),
+    }
+}
+
+function getStickyNoteHitbox(stageSize) {
+    return stageSize.width < 700 ? STICKY_NOTE_HITBOX.narrow : STICKY_NOTE_HITBOX.desktop
+}
+
+function isInsideStickyNote(point, stickyPosition, stageSize) {
+    if (!stickyPosition) return false
+
+    const hitbox = getStickyNoteHitbox(stageSize)
+    const halfWidth = hitbox.width / 2
+    const halfHeight = hitbox.height / 2
+
+    return (
+        point.x >= stickyPosition.x - halfWidth &&
+        point.x <= stickyPosition.x + halfWidth &&
+        point.y >= stickyPosition.y - halfHeight &&
+        point.y <= stickyPosition.y + halfHeight
+    )
+}
+
+function getNextPileNote(stickyNotes) {
+    return stickyNotes.find((note) => !note.lifted)
+}
+
+function getLiftedNoteAtPoint(point, stickyNotes, stageSize) {
+    return [...stickyNotes]
+        .reverse()
+        .find((note) => note.lifted && isInsideStickyNote(point, getFirstPageViewportPosition(note.position), stageSize))
 }
 
 
@@ -22,19 +85,34 @@ export default function Badge() {
     const stageRef = useRef(null)
     const dragLayerRef = useRef(null)
     const dragRef = useRef({ offsetX: 0, offsetY: 0 })
+    const stickyDragRef = useRef({ offsetX: 0, offsetY: 0 })
     const isDraggingRef = useRef(false)
+    const isStickyDraggingRef = useRef(false)
+    const draggedStickyNoteIdRef = useRef(null)
     const badgeModeRef = useRef('attached')
     const positionRef = useRef(null)
+    const stickyNotesRef = useRef(createStickyNoteState())
+    const stickyPilePositionRef = useRef(null)
     const restPositionRef = useRef(null)
     const velocityRef = useRef({ x: 0, y: 0 })
     const [position, setPosition] = useState(null)
+    const [stickyNotes, setStickyNotes] = useState(() => createStickyNoteState())
     const [stageSize, setStageSize] = useState({ width: 1, height: 1 })
     const [dragging, setDragging] = useState(false)
+    const [stickyDragging, setStickyDragging] = useState(false)
     const [badgeMode, setBadgeMode] = useState('attached')
 
     const setBadgePosition = (nextPosition) => {
         positionRef.current = nextPosition
         setPosition(nextPosition)
+    }
+
+    const setStickyNoteState = (updater) => {
+        setStickyNotes((current) => {
+            const next = typeof updater === 'function' ? updater(current) : updater
+            stickyNotesRef.current = next
+            return next
+        })
     }
 
     const stopDragging = (event) => {
@@ -43,7 +121,10 @@ export default function Badge() {
         }
 
         isDraggingRef.current = false
+        isStickyDraggingRef.current = false
+        draggedStickyNoteIdRef.current = null
         setDragging(false)
+        setStickyDragging(false)
     }
 
     useEffect(() => {
@@ -62,9 +143,11 @@ export default function Badge() {
                 x: nextStageSize.width / 2,
                 y: nextStageSize.height * INITIAL_Y,
             }
+            const nextStickyRestPosition = getStickyNoteRestPosition(nextStageSize)
 
             setStageSize(nextStageSize)
             restPositionRef.current = nextRestPosition
+            stickyPilePositionRef.current = nextStickyRestPosition
 
             setPosition((current) => {
                 if (current) {
@@ -79,6 +162,22 @@ export default function Badge() {
                 positionRef.current = nextRestPosition
                 return nextRestPosition
             })
+
+            setStickyNoteState((current) => (
+                current.map((note) => {
+                    if (!note.lifted) return note
+
+                    const position = note.position ?? nextStickyRestPosition
+
+                    return {
+                        ...note,
+                        position: {
+                            x: clamp(position.x, 0, nextStageSize.width),
+                            y: clamp(position.y, 0, nextStageSize.height),
+                        },
+                    }
+                })
+            ))
         }
 
         frame = requestAnimationFrame(placeBadgeHigh)
@@ -150,8 +249,11 @@ export default function Badge() {
 
         if (badgeMode === 'fallen') {
             isDraggingRef.current = false
+            isStickyDraggingRef.current = false
+            draggedStickyNoteIdRef.current = null
             velocityRef.current = { x: 0, y: 0 }
             setDragging(false)
+            setStickyDragging(false)
         }
     }, [badgeMode])
 
@@ -178,10 +280,91 @@ export default function Badge() {
         })
     }
 
+    const moveStickyNote = (event) => {
+        const stage = stageRef.current
+        const draggedStickyNoteId = draggedStickyNoteIdRef.current
+        if (!stage || !draggedStickyNoteId) return
+
+        const stageRect = stage.getBoundingClientRect()
+        const scrollY = getScrollY()
+        const nextPosition = {
+            x: clamp(event.clientX - stageRect.left - stickyDragRef.current.offsetX, 0, stageRect.width),
+            y: clamp(event.clientY - stageRect.top - stickyDragRef.current.offsetY + scrollY, 0, stageRect.height),
+        }
+
+        setStickyNoteState((current) => (
+            current.map((note) => (
+                note.id === draggedStickyNoteId
+                    ? { ...note, lifted: true, position: nextPosition }
+                    : note
+            ))
+        ))
+    }
+
+    const startStickyDrag = (noteId, notePosition, pointerPosition, dragLayer, pointerId, options = {}) => {
+        const documentPosition = options.positionIsViewport
+            ? {
+                x: notePosition.x,
+                y: notePosition.y + getScrollY(),
+            }
+            : notePosition
+        const viewportPosition = options.positionIsViewport
+            ? notePosition
+            : getFirstPageViewportPosition(notePosition)
+
+        stickyDragRef.current = {
+            offsetX: pointerPosition.x - viewportPosition.x,
+            offsetY: pointerPosition.y - viewportPosition.y,
+        }
+
+        setStickyNoteState((current) => (
+            current.map((note) => (
+                note.id === noteId
+                    ? { ...note, lifted: true, position: documentPosition }
+                    : note
+            ))
+        ))
+
+        dragLayer.setPointerCapture(pointerId)
+        draggedStickyNoteIdRef.current = noteId
+        isStickyDraggingRef.current = true
+        setStickyDragging(true)
+    }
+
     const handlePointerDown = (event) => {
         const dragLayer = dragLayerRef.current
+        if (!dragLayer) return
+
+        const stage = stageRef.current
+        if (!stage) return
+
+        const stageRect = stage.getBoundingClientRect()
+        const pointerPosition = {
+            x: event.clientX - stageRect.left,
+            y: event.clientY - stageRect.top,
+        }
+
+        const liftedStickyNote = getLiftedNoteAtPoint(pointerPosition, stickyNotesRef.current, stageSize)
+        if (liftedStickyNote) {
+            startStickyDrag(liftedStickyNote.id, liftedStickyNote.position, pointerPosition, dragLayer, event.pointerId)
+            event.preventDefault()
+            return
+        }
+
+        if (badgeModeRef.current !== 'attached') return
+
+        const nextPileNote = getNextPileNote(stickyNotesRef.current)
+        const pilePosition = stickyPilePositionRef.current
+        if (nextPileNote && isInsideStickyNote(pointerPosition, pilePosition, stageSize)) {
+            startStickyDrag(nextPileNote.id, pilePosition, pointerPosition, dragLayer, event.pointerId, {
+                positionIsViewport: true,
+            })
+            event.preventDefault()
+            return
+        }
+
         const current = positionRef.current
-        if (!dragLayer || !current || badgeModeRef.current !== 'attached') return
+        if (!current) return
 
         dragRef.current = {
             offsetX: event.clientX - current.x,
@@ -194,6 +377,11 @@ export default function Badge() {
     }
 
     const handlePointerMove = (event) => {
+        if (isStickyDraggingRef.current) {
+            moveStickyNote(event)
+            return
+        }
+
         if (!isDraggingRef.current) return
         moveBadge(event)
     }
@@ -203,7 +391,7 @@ export default function Badge() {
             <div
                 ref={dragLayerRef}
                 data-testid="badge-drag"
-                className={`absolute inset-0 select-none ${dragging ? 'cursor-grabbing touch-none' : badgeMode === 'attached' ? 'cursor-grab touch-pan-y' : 'cursor-default touch-pan-y'}`}
+                className={`absolute inset-0 select-none ${dragging || stickyDragging ? 'cursor-grabbing touch-none' : badgeMode === 'attached' ? 'cursor-grab touch-pan-y' : 'cursor-default touch-pan-y'}`}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={stopDragging}
@@ -222,7 +410,14 @@ export default function Badge() {
                         <directionalLight position={[2.5, 4, 4]} intensity={1.5} />
                         <directionalLight position={[-3, -1, 2]} intensity={0.8} color="#bcd7ff" />
                         <Suspense fallback={null}>
-                            {position && <BadgeScene screenPosition={position} stageSize={stageSize} badgeMode={badgeMode} />}
+                            {position && (
+                                <BadgeScene
+                                    screenPosition={position}
+                                    stageSize={stageSize}
+                                    badgeMode={badgeMode}
+                                    stickyNotes={stickyNotes}
+                                />
+                            )}
                             <Environment preset="studio" environmentIntensity={0.2} />
                         </Suspense>
                     </Canvas>

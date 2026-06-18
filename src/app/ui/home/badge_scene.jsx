@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
+import { StickyNotes } from './sticky_notes'
 
 const MODEL_PATH = '/badge7.glb'
 const CORD_SEGMENTS = 28
@@ -68,7 +69,7 @@ function Cord({ badgeRef, scene, viewport }) {
 
 }
 
-export function BadgeScene({ screenPosition, stageSize, badgeMode }) {
+export function BadgeScene({ screenPosition, stageSize, badgeMode, stickyNotes }) {
     const badge = useRef()
     const fallVelocity = useRef(0)
     const landed = useRef(false)
@@ -140,6 +141,11 @@ export function BadgeScene({ screenPosition, stageSize, badgeMode }) {
     return (
         <>
             {badgeMode === 'attached' && <Cord badgeRef={badge} scene={scene} viewport={viewport}/>}
+            <StickyNotes
+                notes={stickyNotes}
+                stageSize={stageSize}
+                badgeMode={badgeMode}
+            />
             <group ref={badge} scale={1} position={[-0.03, -3.3, 0.14]}>
                 <primitive object={scene} />
             </group>
