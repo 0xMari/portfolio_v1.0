@@ -50,6 +50,8 @@ export const STICKY_NOTES = [
     },
 ]
 
+export const MOBILE_HIDDEN_STICKY_NOTE_IDS = new Set(['grab'])
+
 const NOTE_WIDTH = 2.35
 const NOTE_HEIGHT = 1.58
 const NOTE_DEPTH = 0.045
@@ -58,6 +60,7 @@ const PILE_FALL_SCROLL_THRESHOLD = 0.3
 const PILE_FALL_GRAVITY = 12
 const PILE_FLOOR_BOUNCE = 0.14
 const LIFTED_NOTE_Z = -0.25
+const ACTIVE_MOBILE_NOTE_Z = 1.18
 const PILE_DESKTOP_POSITION = [-3.15, -1.18, -0.95]
 const PILE_NARROW_POSITION = [0, -1.78, -0.12]
 
@@ -157,11 +160,11 @@ function TexturedStickyNote({ geometry, noteMaterial, textMaterial, position = [
     )
 }
 
-function screenToWorld(screenPosition, stageSize, viewport) {
+function screenToWorld(screenPosition, stageSize, viewport, z = LIFTED_NOTE_Z) {
     return [
         ((screenPosition.x / stageSize.width) - 0.5) * viewport.width,
         (0.5 - (screenPosition.y / stageSize.height)) * viewport.height,
-        LIFTED_NOTE_Z,
+        z,
     ]
 }
 
@@ -177,12 +180,13 @@ function LiftedStickyNote({
     stageSize,
     viewport,
     scale,
+    z = LIFTED_NOTE_Z,
 }) {
     const liftedNote = useRef()
     const initialPosition = screenToWorld({
         x: note.position.x,
         y: note.position.y - getScrollY(),
-    }, stageSize, viewport)
+    }, stageSize, viewport, z)
 
     useFrame(() => {
         if (!liftedNote.current) return
@@ -190,7 +194,7 @@ function LiftedStickyNote({
         const nextPosition = screenToWorld({
             x: note.position.x,
             y: note.position.y - getScrollY(),
-        }, stageSize, viewport)
+        }, stageSize, viewport, z)
 
         liftedNote.current.position.set(...nextPosition)
     })
@@ -211,7 +215,13 @@ function LiftedStickyNote({
     )
 }
 
-export function StickyNotes({ notes = [], stageSize, badgeMode = 'attached' }) {
+export function StickyNotes({
+    notes = [],
+    stageSize,
+    badgeMode = 'attached',
+    mobileDeskMode = false,
+    activeMobileItem = null,
+}) {
     const pile = useRef()
     const pileNotes = useRef()
     const pileFallVelocity = useRef(0)
@@ -237,7 +247,10 @@ export function StickyNotes({ notes = [], stageSize, badgeMode = 'attached' }) {
     ])), [])
     const noteStateById = useMemo(() => new Map(notes.map((note) => [note.id, note])), [notes])
     const remainingNotes = STICKY_NOTES.filter((note) => !noteStateById.get(note.id)?.lifted)
-    const liftedNotes = STICKY_NOTES
+    const visibleNoteDefinitions = mobileDeskMode
+        ? STICKY_NOTES.filter((note) => !MOBILE_HIDDEN_STICKY_NOTE_IDS.has(note.id))
+        : STICKY_NOTES
+    const liftedNotes = visibleNoteDefinitions
         .map((note) => ({ ...noteStateById.get(note.id), definition: note }))
         .filter((note) => note.lifted && note.position)
     const topPileNote = remainingNotes[0]
@@ -250,7 +263,7 @@ export function StickyNotes({ notes = [], stageSize, badgeMode = 'attached' }) {
     }, [])
 
     useFrame((state, delta) => {
-        if (!pile.current) return
+        if (mobileDeskMode || !pile.current) return
 
         const safeDelta = Math.min(delta, 0.033)
 
@@ -301,39 +314,42 @@ export function StickyNotes({ notes = [], stageSize, badgeMode = 'attached' }) {
 
     return (
         <>
-            <group
-                ref={pile}
-                position={pilePosition}
-                rotation={[5.2, 0, 0]}
-                scale={isNarrow ? 0.58 : 0.92}
-            >
-                <StickyNotePileBlock
-                    geometry={pileBlockGeometry}
-                    material={pileBlockMaterial}
-                />
+            {!mobileDeskMode && (
+                <group
+                    ref={pile}
+                    position={pilePosition}
+                    rotation={[5.2, 0, 0]}
+                    scale={isNarrow ? 0.58 : 0.92}
+                >
+                    <StickyNotePileBlock
+                        geometry={pileBlockGeometry}
+                        material={pileBlockMaterial}
+                    />
 
-                <group ref={pileNotes}>
-                    {bottomPileNotes.map((note, index) => (
-                        <StickyNoteSheet
-                            key={note.id}
-                            index={bottomPileNotes.length - index}
-                            geometry={noteGeometry}
-                            material={noteMaterials.get(note.id)}
-                        />
-                    ))}
+                    <group ref={pileNotes}>
+                        {bottomPileNotes.map((note, index) => (
+                            <StickyNoteSheet
+                                key={note.id}
+                                index={bottomPileNotes.length - index}
+                                geometry={noteGeometry}
+                                material={noteMaterials.get(note.id)}
+                            />
+                        ))}
 
-                    {topPileNote && (
-                        <TexturedStickyNote
-                            geometry={noteGeometry}
-                            noteMaterial={noteMaterials.get(topPileNote.id)}
-                            textMaterial={textMaterials.get(topPileNote.id)}
-                        />
-                    )}
+                        {topPileNote && (
+                            <TexturedStickyNote
+                                geometry={noteGeometry}
+                                noteMaterial={noteMaterials.get(topPileNote.id)}
+                                textMaterial={textMaterials.get(topPileNote.id)}
+                            />
+                        )}
+                    </group>
                 </group>
-            </group>
+            )}
 
             {liftedNotes.map((note) => {
                 const definition = getNoteDefinition(note.id) ?? note.definition
+                const isActiveMobileItem = mobileDeskMode && activeMobileItem === note.id
 
                 return (
                     <LiftedStickyNote
@@ -345,6 +361,7 @@ export function StickyNotes({ notes = [], stageSize, badgeMode = 'attached' }) {
                         stageSize={stageSize}
                         viewport={viewport}
                         scale={isNarrow ? 0.58 : 0.92}
+                        z={isActiveMobileItem ? ACTIVE_MOBILE_NOTE_Z : LIFTED_NOTE_Z}
                     />
                 )
             })}

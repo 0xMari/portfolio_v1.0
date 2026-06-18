@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Environment, useGLTF } from '@react-three/drei'
 import { BadgeScene } from './badge_scene'
-import { STICKY_NOTES } from './sticky_notes'
+import { MOBILE_HIDDEN_STICKY_NOTE_IDS, STICKY_NOTES } from './sticky_notes'
 
 
 const MODEL_PATH = '/badge7.glb'
@@ -14,7 +14,11 @@ const SPRING_DAMPING = 0.78
 const FALL_SCROLL_THRESHOLD = 0.85
 const STICKY_NOTE_HITBOX = {
     desktop: { width: 360, height: 230 },
-    narrow: { width: 230, height: 160 },
+    narrow: { width: 240, height: 170 },
+}
+const MOBILE_BADGE_HITBOX = {
+    width: 280,
+    height: 360,
 }
 
 function createStickyNoteState() {
@@ -39,6 +43,38 @@ function getFirstPageViewportPosition(position) {
     return {
         x: position.x,
         y: position.y - getScrollY(),
+    }
+}
+
+function isMobileStage(stageSize) {
+    return stageSize.width < 700
+}
+
+function getMobileBadgeRestPosition(stageSize) {
+    return {
+        x: stageSize.width * 0.5,
+        y: stageSize.height * 0.5,
+    }
+}
+
+function getMobileStickyNotePositions(stageSize) {
+    return {
+        grab: {
+            x: stageSize.width * 0.34,
+            y: stageSize.height * 0.28,
+        },
+        available: {
+            x: stageSize.width * 0.67,
+            y: stageSize.height * 0.38,
+        },
+        groceries: {
+            x: stageSize.width * 0.33,
+            y: stageSize.height * 0.68,
+        },
+        'tech-stack': {
+            x: stageSize.width * 0.68,
+            y: stageSize.height * 0.76,
+        },
     }
 }
 
@@ -70,14 +106,43 @@ function isInsideStickyNote(point, stickyPosition, stageSize) {
     )
 }
 
+function isInsideMobileBadge(point, badgePosition) {
+    if (!badgePosition) return false
+
+    const halfWidth = MOBILE_BADGE_HITBOX.width / 2
+    const halfHeight = MOBILE_BADGE_HITBOX.height / 2
+
+    return (
+        point.x >= badgePosition.x - halfWidth &&
+        point.x <= badgePosition.x + halfWidth &&
+        point.y >= badgePosition.y - halfHeight &&
+        point.y <= badgePosition.y + halfHeight
+    )
+}
+
 function getNextPileNote(stickyNotes) {
     return stickyNotes.find((note) => !note.lifted)
 }
 
-function getLiftedNoteAtPoint(point, stickyNotes, stageSize) {
-    return [...stickyNotes]
+function getLiftedNoteAtPoint(point, stickyNotes, stageSize, activeMobileItem = null) {
+    const orderedNotes = [...stickyNotes]
+
+    if (isMobileStage(stageSize) && activeMobileItem) {
+        const activeIndex = orderedNotes.findIndex((note) => note.id === activeMobileItem)
+
+        if (activeIndex >= 0) {
+            const [activeNote] = orderedNotes.splice(activeIndex, 1)
+            orderedNotes.push(activeNote)
+        }
+    }
+
+    return orderedNotes
         .reverse()
-        .find((note) => note.lifted && isInsideStickyNote(point, getFirstPageViewportPosition(note.position), stageSize))
+        .find((note) => (
+            note.lifted &&
+            !(isMobileStage(stageSize) && MOBILE_HIDDEN_STICKY_NOTE_IDS.has(note.id)) &&
+            isInsideStickyNote(point, getFirstPageViewportPosition(note.position), stageSize)
+        ))
 }
 
 
@@ -86,9 +151,13 @@ export default function Badge() {
     const dragLayerRef = useRef(null)
     const dragRef = useRef({ offsetX: 0, offsetY: 0 })
     const stickyDragRef = useRef({ offsetX: 0, offsetY: 0 })
+    const pagePanRef = useRef({ lastY: 0 })
     const isDraggingRef = useRef(false)
     const isStickyDraggingRef = useRef(false)
+    const isPagePanningRef = useRef(false)
+    const isMobileRef = useRef(false)
     const draggedStickyNoteIdRef = useRef(null)
+    const activeMobileItemRef = useRef(null)
     const badgeModeRef = useRef('attached')
     const positionRef = useRef(null)
     const stickyNotesRef = useRef(createStickyNoteState())
@@ -101,6 +170,7 @@ export default function Badge() {
     const [dragging, setDragging] = useState(false)
     const [stickyDragging, setStickyDragging] = useState(false)
     const [badgeMode, setBadgeMode] = useState('attached')
+    const [activeMobileItem, setActiveMobileItem] = useState(null)
 
     const setBadgePosition = (nextPosition) => {
         positionRef.current = nextPosition
@@ -115,6 +185,11 @@ export default function Badge() {
         })
     }
 
+    const setActiveMobileItemState = (nextItem) => {
+        activeMobileItemRef.current = nextItem
+        setActiveMobileItem(nextItem)
+    }
+
     const stopDragging = (event) => {
         if (event?.pointerId != null && dragLayerRef.current?.hasPointerCapture(event.pointerId)) {
             dragLayerRef.current.releasePointerCapture(event.pointerId)
@@ -122,6 +197,7 @@ export default function Badge() {
 
         isDraggingRef.current = false
         isStickyDraggingRef.current = false
+        isPagePanningRef.current = false
         draggedStickyNoteIdRef.current = null
         setDragging(false)
         setStickyDragging(false)
@@ -139,21 +215,31 @@ export default function Badge() {
 
             const stageRect = stage.getBoundingClientRect()
             const nextStageSize = { width: stageRect.width, height: stageRect.height }
-            const nextRestPosition = {
-                x: nextStageSize.width / 2,
-                y: nextStageSize.height * INITIAL_Y,
-            }
+            const nextIsMobile = isMobileStage(nextStageSize)
+            const previousIsMobile = isMobileRef.current
+            const nextRestPosition = nextIsMobile
+                ? getMobileBadgeRestPosition(nextStageSize)
+                : {
+                    x: nextStageSize.width / 2,
+                    y: nextStageSize.height * INITIAL_Y,
+                }
             const nextStickyRestPosition = getStickyNoteRestPosition(nextStageSize)
+            const nextMobileStickyNotePositions = getMobileStickyNotePositions(nextStageSize)
 
+            isMobileRef.current = nextIsMobile
             setStageSize(nextStageSize)
             restPositionRef.current = nextRestPosition
             stickyPilePositionRef.current = nextStickyRestPosition
 
             setPosition((current) => {
-                if (current) {
+                if (current && previousIsMobile === nextIsMobile) {
                     const clamped = {
                         x: clamp(current.x, 0, nextStageSize.width),
-                        y: clamp(current.y, -nextStageSize.height, nextStageSize.height),
+                        y: clamp(
+                            current.y,
+                            nextIsMobile ? 0 : -nextStageSize.height,
+                            nextStageSize.height
+                        ),
                     }
                     positionRef.current = clamped
                     return clamped
@@ -163,8 +249,41 @@ export default function Badge() {
                 return nextRestPosition
             })
 
+            if (!nextIsMobile && previousIsMobile && activeMobileItemRef.current) {
+                setActiveMobileItemState(null)
+            }
+
             setStickyNoteState((current) => (
                 current.map((note) => {
+                    if (nextIsMobile) {
+                        if (MOBILE_HIDDEN_STICKY_NOTE_IDS.has(note.id)) {
+                            return {
+                                ...note,
+                                lifted: false,
+                                position: null,
+                            }
+                        }
+
+                        const nextPosition = note.position ?? nextMobileStickyNotePositions[note.id]
+
+                        return {
+                            ...note,
+                            lifted: true,
+                            position: {
+                                x: clamp(nextPosition.x, 0, nextStageSize.width),
+                                y: clamp(nextPosition.y, 0, nextStageSize.height),
+                            },
+                        }
+                    }
+
+                    if (previousIsMobile) {
+                        return {
+                            ...note,
+                            lifted: false,
+                            position: null,
+                        }
+                    }
+
                     if (!note.lifted) return note
 
                     const position = note.position ?? nextStickyRestPosition
@@ -196,7 +315,13 @@ export default function Badge() {
             const current = positionRef.current
             const rest = restPositionRef.current
 
-            if (badgeModeRef.current === 'attached' && !isDraggingRef.current && current && rest) {
+            if (
+                !isMobileRef.current &&
+                badgeModeRef.current === 'attached' &&
+                !isDraggingRef.current &&
+                current &&
+                rest
+            ) {
                 const velocity = velocityRef.current
                 velocity.x = (velocity.x + (rest.x - current.x) * SPRING_STIFFNESS) * SPRING_DAMPING
                 velocity.y = (velocity.y + (rest.y - current.y) * SPRING_STIFFNESS) * SPRING_DAMPING
@@ -229,6 +354,11 @@ export default function Badge() {
 
     useEffect(() => {
         const updateBadgeMode = () => {
+            if (window.innerWidth < 700) {
+                setBadgeMode('attached')
+                return
+            }
+
             if (window.scrollY >= window.innerHeight * FALL_SCROLL_THRESHOLD) {
                 setBadgeMode('fallen')
             }
@@ -250,6 +380,7 @@ export default function Badge() {
         if (badgeMode === 'fallen') {
             isDraggingRef.current = false
             isStickyDraggingRef.current = false
+            isPagePanningRef.current = false
             draggedStickyNoteIdRef.current = null
             velocityRef.current = { x: 0, y: 0 }
             setDragging(false)
@@ -274,9 +405,14 @@ export default function Badge() {
         if (!stage) return
 
         const stageRect = stage.getBoundingClientRect()
+        const scrollY = isMobileRef.current ? getScrollY() : 0
         setBadgePosition({
             x: clamp(event.clientX - stageRect.left - dragRef.current.offsetX, 0, stageRect.width),
-            y: clamp(event.clientY - stageRect.top - dragRef.current.offsetY, -stageRect.height, stageRect.height),
+            y: clamp(
+                event.clientY - stageRect.top - dragRef.current.offsetY + scrollY,
+                isMobileRef.current ? 0 : -stageRect.height,
+                stageRect.height
+            ),
         })
     }
 
@@ -331,6 +467,34 @@ export default function Badge() {
         setStickyDragging(true)
     }
 
+    const startPagePan = (pointerY, dragLayer, pointerId) => {
+        pagePanRef.current = { lastY: pointerY }
+        dragLayer.setPointerCapture(pointerId)
+        isPagePanningRef.current = true
+    }
+
+    const movePagePan = (event) => {
+        const deltaY = pagePanRef.current.lastY - event.clientY
+        pagePanRef.current.lastY = event.clientY
+        window.scrollBy(0, deltaY)
+    }
+
+    const startBadgeDrag = (pointerPosition, referencePosition, dragLayer, pointerId) => {
+        const current = positionRef.current
+        if (!current || !referencePosition) return false
+
+        dragRef.current = {
+            offsetX: pointerPosition.x - referencePosition.x,
+            offsetY: pointerPosition.y - referencePosition.y,
+        }
+        velocityRef.current = { x: 0, y: 0 }
+        dragLayer.setPointerCapture(pointerId)
+        isDraggingRef.current = true
+        setDragging(true)
+
+        return true
+    }
+
     const handlePointerDown = (event) => {
         const dragLayer = dragLayerRef.current
         if (!dragLayer) return
@@ -342,6 +506,44 @@ export default function Badge() {
         const pointerPosition = {
             x: event.clientX - stageRect.left,
             y: event.clientY - stageRect.top,
+        }
+
+        if (isMobileRef.current) {
+            const badgeViewportPosition = getFirstPageViewportPosition(positionRef.current)
+            const badgeHit = isInsideMobileBadge(pointerPosition, badgeViewportPosition)
+            const mobileStickyNote = getLiftedNoteAtPoint(
+                pointerPosition,
+                stickyNotesRef.current,
+                stageSize,
+                activeMobileItemRef.current
+            )
+
+            if (activeMobileItemRef.current === 'badge' && badgeHit) {
+                if (startBadgeDrag(pointerPosition, badgeViewportPosition, dragLayer, event.pointerId)) {
+                    setActiveMobileItemState('badge')
+                    event.preventDefault()
+                    return
+                }
+            }
+
+            if (mobileStickyNote) {
+                setActiveMobileItemState(mobileStickyNote.id)
+                startStickyDrag(mobileStickyNote.id, mobileStickyNote.position, pointerPosition, dragLayer, event.pointerId)
+                event.preventDefault()
+                return
+            }
+
+            if (badgeHit) {
+                if (startBadgeDrag(pointerPosition, badgeViewportPosition, dragLayer, event.pointerId)) {
+                    setActiveMobileItemState('badge')
+                    event.preventDefault()
+                    return
+                }
+            }
+
+            startPagePan(event.clientY, dragLayer, event.pointerId)
+            event.preventDefault()
+            return
         }
 
         const liftedStickyNote = getLiftedNoteAtPoint(pointerPosition, stickyNotesRef.current, stageSize)
@@ -366,32 +568,44 @@ export default function Badge() {
         const current = positionRef.current
         if (!current) return
 
-        dragRef.current = {
-            offsetX: event.clientX - current.x,
-            offsetY: event.clientY - current.y,
+        if (startBadgeDrag(pointerPosition, current, dragLayer, event.pointerId)) {
+            setDragging(true)
         }
-        velocityRef.current = { x: 0, y: 0 }
-        dragLayer.setPointerCapture(event.pointerId)
-        isDraggingRef.current = true
-        setDragging(true)
     }
 
     const handlePointerMove = (event) => {
+        if (isPagePanningRef.current) {
+            movePagePan(event)
+            event.preventDefault()
+            return
+        }
+
         if (isStickyDraggingRef.current) {
             moveStickyNote(event)
+            event.preventDefault()
             return
         }
 
         if (!isDraggingRef.current) return
         moveBadge(event)
+        event.preventDefault()
     }
+
+    const mobileDeskMode = isMobileStage(stageSize)
+    const dragLayerInteractionClass = mobileDeskMode
+        ? `${dragging || stickyDragging ? 'cursor-grabbing' : 'cursor-grab'} touch-none`
+        : dragging || stickyDragging
+            ? 'cursor-grabbing touch-none'
+            : badgeMode === 'attached'
+                ? 'cursor-grab touch-pan-y'
+                : 'cursor-default touch-pan-y'
 
     return (
         <div ref={stageRef} className="fixed inset-0 z-10 overflow-hidden">
             <div
                 ref={dragLayerRef}
                 data-testid="badge-drag"
-                className={`absolute inset-0 select-none ${dragging || stickyDragging ? 'cursor-grabbing touch-none' : badgeMode === 'attached' ? 'cursor-grab touch-pan-y' : 'cursor-default touch-pan-y'}`}
+                className={`absolute inset-0 select-none ${dragLayerInteractionClass}`}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={stopDragging}
@@ -416,6 +630,8 @@ export default function Badge() {
                                     stageSize={stageSize}
                                     badgeMode={badgeMode}
                                     stickyNotes={stickyNotes}
+                                    mobileDeskMode={mobileDeskMode}
+                                    activeMobileItem={activeMobileItem}
                                 />
                             )}
                             <Environment preset="studio" environmentIntensity={0.2} />

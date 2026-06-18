@@ -12,6 +12,8 @@ const CORD_RADIUS = 0.01
 const CORD_RADIAL_SEGMENTS = 8
 const FALL_GRAVITY = 12
 const FLOOR_BOUNCE = 0.18
+const MOBILE_BADGE_Z = 0.62
+const ACTIVE_MOBILE_BADGE_Z = 1.22
 
 function createCordGeometry(curve) {
     return new THREE.TubeGeometry(curve, CORD_SEGMENTS, CORD_RADIUS, CORD_RADIAL_SEGMENTS, false)
@@ -23,6 +25,10 @@ function getSecondPageFloorY(viewport, stageSize) {
     const secondPageBottomY = viewportHeight * 2 - scrollY
 
     return (0.5 - secondPageBottomY / viewportHeight) * viewport.height + 0.48
+}
+
+function getScrollY() {
+    return typeof window === 'undefined' ? 0 : window.scrollY
 }
 
 function Cord({ badgeRef, scene, viewport }) {
@@ -69,7 +75,14 @@ function Cord({ badgeRef, scene, viewport }) {
 
 }
 
-export function BadgeScene({ screenPosition, stageSize, badgeMode, stickyNotes }) {
+export function BadgeScene({
+    screenPosition,
+    stageSize,
+    badgeMode,
+    stickyNotes,
+    mobileDeskMode = false,
+    activeMobileItem = null,
+}) {
     const badge = useRef()
     const fallVelocity = useRef(0)
     const landed = useRef(false)
@@ -91,6 +104,21 @@ export function BadgeScene({ screenPosition, stageSize, badgeMode, stickyNotes }
 
         const elapsed = state.clock.elapsedTime
         const safeDelta = Math.min(delta, 0.033)
+
+        if (mobileDeskMode) {
+            const viewportY = screenPosition.y - getScrollY()
+            const worldX = ((screenPosition.x / stageSize.width) - 0.5) * viewport.width
+            const worldY = (0.5 - (viewportY / stageSize.height)) * viewport.height
+
+            badge.current.position.x = worldX
+            badge.current.position.y = worldY
+            badge.current.position.z = activeMobileItem === 'badge' ? ACTIVE_MOBILE_BADGE_Z : MOBILE_BADGE_Z
+            badge.current.rotation.x = 0
+            badge.current.rotation.y = 0.12
+            badge.current.rotation.z = -0.16
+            badge.current.updateWorldMatrix(true, true)
+            return
+        }
 
         if (badgeMode === 'fallen') {
             const floorY = getSecondPageFloorY(viewport, stageSize)
@@ -140,11 +168,13 @@ export function BadgeScene({ screenPosition, stageSize, badgeMode, stickyNotes }
 
     return (
         <>
-            {badgeMode === 'attached' && <Cord badgeRef={badge} scene={scene} viewport={viewport}/>}
+            {badgeMode === 'attached' && !mobileDeskMode && <Cord badgeRef={badge} scene={scene} viewport={viewport}/>}
             <StickyNotes
                 notes={stickyNotes}
                 stageSize={stageSize}
                 badgeMode={badgeMode}
+                mobileDeskMode={mobileDeskMode}
+                activeMobileItem={activeMobileItem}
             />
             <group ref={badge} scale={1} position={[-0.03, -3.3, 0.14]}>
                 <primitive object={scene} />
