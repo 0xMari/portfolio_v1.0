@@ -4,39 +4,36 @@ const prjList = [
   {
     name:'Little Things',
     year:'2026',
+    description: 'Interactive 3D blind box experiment with a full Blender-to-web pipeline.',
     category: ['3d', 'blender', 'dev'],
     href: 'https://github.com/0xMari/blindbox',
   },
   {
-    name: 'Aethr [WIP/just a landing atm]',
+    name: 'Aethr',
     year: '2026',
+    description: '[WIP] AI travel product, landing completed, currently focused on agents logic.',
     category: ['dev', 'ai', 'agents'],
     href: 'https://aethr-travel.vercel.app/',
   },
   {
     name: 'Fairytown',
     year: '2026',
+    description: 'Procedural WebGL world built around playful exploration and 3D systems.',
     category: ['webgl','3d','dev', 'procedural world'],
     href: 'https://github.com/0xMari/fairytown',
   },
   {
     name: 'Blobs',
     year: '2026',
+    description: 'WebGL playground for soft metaball-like shapes, motion, and material studies.',
     category: ['webgl','3d', 'playground'],
     href: 'https://v3-murex.vercel.app/',
   },
-  {
-    name: 'music sphere [WIP, still]',
-    year: '2024',
-    category: ['webgl', '3d', 'glsl shader', 'playground'],
-    href: '/projects/sphere',
-  },
-  
 ]
 
 export default function Page() {
     return(
-      <main className="min-h-screen w-full overflow-x-hidden px-6 pb-12 pt-28 text-foreground sm:px-8 md:px-10 md:pt-24 lg:px-16">
+      <main className=" font-mono min-h-screen w-full overflow-x-hidden px-6 pb-12 pt-28 text-foreground sm:px-8 md:px-5 md:pt-24 lg:px-10">
         <section className="mx-auto w-full max-w-6xl">
           <div className="md:hidden">
             {prjList.map((prg) => (
@@ -53,6 +50,9 @@ export default function Page() {
                   </Link>
                   <span className="pt-1 text-base leading-none">{prg.year}</span>
                 </div>
+                <p className="mt-3 max-w-xl text-sm leading-relaxed text-foreground/75">
+                  {prg.description}
+                </p>
                 <div className="mt-4 flex flex-wrap gap-x-3 gap-y-2 text-sm text-foreground/75">
                   {prg.category.map((c) => (
                     <span
@@ -71,7 +71,8 @@ export default function Page() {
             <table className="w-full table-fixed rounded-md text-foreground">
               <colgroup>
                 <col className="w-24 lg:w-32" />
-                <col className="w-[42%]" />
+                <col className="w-[30%]" />
+                <col className="w-[34%]" />
                 <col />
               </colgroup>
               <thead className="rounded-md text-left text-lg font-normal xl:text-xl">
@@ -81,6 +82,9 @@ export default function Page() {
                   </th>
                   <th scope="col" className="px-4 py-5 font-medium">
                     project
+                  </th>
+                  <th scope="col" className="px-4 py-5 font-medium">
+                    description
                   </th>
                   <th scope="col" className="px-4 py-5 font-medium">
                     category
@@ -99,6 +103,9 @@ export default function Page() {
                         className="inline-block max-w-full break-words leading-snug hover:underline">
                           {prg.name}
                       </Link>
+                    </td>
+                    <td className="px-4 py-5 align-top text-base leading-snug text-foreground/75 group-hover:text-pink-500 xl:text-lg">
+                      {prg.description}
                     </td>
                     <td className="px-4 py-5 align-top">
                       <div className="flex flex-wrap gap-2">

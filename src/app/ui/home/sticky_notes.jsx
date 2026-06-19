@@ -67,6 +67,7 @@ const PICKUP_LIFT = 0.035
 const ACTIVE_LIFT = 0.055
 const PILE_DESKTOP_POSITION = [-3.15, -1.18, -0.95]
 const PILE_NARROW_POSITION = [0, -1.78, -0.12]
+const NOTE_FONT_FAMILY = '"Courier New", Courier, monospace'
 
 function getNoteDefinition(id) {
     return STICKY_NOTES.find((note) => note.id === id)
@@ -93,7 +94,7 @@ function createNoteTexture(note) {
 
     if (note.variant === 'hero') {
         context.textAlign = 'center'
-        context.font = '800 148px Arial, sans-serif'
+        context.font = `800 148px ${NOTE_FONT_FAMILY}`
         context.fillText(note.title, canvas.width / 2, 250)
         context.strokeStyle = 'rgba(20, 30, 30, 0.18)'
         context.lineWidth = 8
@@ -103,12 +104,14 @@ function createNoteTexture(note) {
         context.stroke()
     } else {
         context.textAlign = 'left'
-        context.font = '700 74px Arial, sans-serif'
+        context.font = `700 74px ${NOTE_FONT_FAMILY}`
         context.fillText(note.title, 76, 76)
 
         context.fillStyle = '#243131'
-        context.font = note.lines.length > 5 ? '500 54px Arial, sans-serif' : '500 58px Arial, sans-serif'
-        const lineHeight = note.lines.length > 5 ? 63 : 70
+        context.font = note.lines.length > 5
+            ? `500 50px ${NOTE_FONT_FAMILY}`
+            : `500 48px ${NOTE_FONT_FAMILY}`
+        const lineHeight = note.lines.length > 5 ? 60 : 62
 
         note.lines.forEach((line, index) => {
             context.fillText(line, 76, 188 + index * lineHeight)

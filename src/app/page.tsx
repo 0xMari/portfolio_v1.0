@@ -5,21 +5,21 @@ import Badge from '@/app/ui/home/badge'
 
 export default function Page() {
   return (
-    <main className={`${outfit.className} relative min-h-screen w-screen overflow-x-hidden`}>
+    <main className={`font-mono relative min-h-screen w-screen overflow-x-hidden`}>
       <Badge />
       <section className="flex h-screen w-full items-end justify-center">
         {/* <h1 className='hidden lg:flex'>desktop only</h1> */}
         <div className='flex flex-col w-full lg:hidden z-20 p-10'>
-          <h1 className={`${playFair.className} text-xl lg:text-5xl font-semibold text-neutral-900 text-center`}>Let's connect!</h1>
+          <h1 className={` text-xl lg:text-5xl font-semibold text-neutral-900 text-center`}>Let's connect!</h1>
           <div className='flex justify-between w-full'>
-            <a href='/'>Linkedin</a>
-            <a href='/'>Let's chat</a>
+            <a href='https://www.linkedin.com/in/maria-jyate/'>Linkedin</a>
+            <a href='https://calendly.com/0xmari/30min'>Let's chat</a>
           </div>
 
         </div>
         
       </section>
-      <section className={`${outfit.className} relative z-20 hidden lg:flex lg:flex-col h-screen w-full items-center justify-center`}>
+      <section className={`font-mono relative z-20 hidden lg:flex lg:flex-col h-screen w-full items-center justify-center`}>
         <h1 className="w-screen whitespace-nowrap text-center text-[clamp(5rem,12vw,18rem)] font-semibold uppercase leading-none text-neutral-900">Let's connect</h1>
         <div className='flex flex-row w-full justify-around pt-10'>
           <div className='text-center'>

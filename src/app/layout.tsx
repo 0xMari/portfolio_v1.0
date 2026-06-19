@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { mont} from '@/app/ui/font'
 import "./globals.css";
-import Menu from "./ui/navigation/menu";
+import Navbar from "./ui/navbar/navbar";
+import Loader from "./ui/loader";
 
 
 
 export const metadata: Metadata = {
-  title: "helloworld",
+  title: "mrajyt",
   description: "portfolio",
 };
 
@@ -22,7 +23,8 @@ export default function RootLayout({
         id='circularcursor'
         suppressHydrationWarning
       >
-        <Menu />
+        <Navbar />
+        <Loader />
         {children}
       </body>
     </html>

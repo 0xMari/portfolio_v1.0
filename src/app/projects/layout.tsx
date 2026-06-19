@@ -1,5 +1,4 @@
 'use client'
-import NavLinks from "../ui/nav-links";
 import { outfit } from "../ui/font";
 
 export const experimental_ppr = true;

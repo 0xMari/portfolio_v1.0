@@ -5,6 +5,7 @@ import { Canvas } from '@react-three/fiber'
 import { Environment, useGLTF } from '@react-three/drei'
 import { BadgeScene } from './badge_scene'
 import { MOBILE_HIDDEN_STICKY_NOTE_IDS, STICKY_NOTES } from './sticky_notes'
+import { notifyHomeSceneReady } from '@/app/ui/loader'
 
 
 const MODEL_PATH = '/badge7.glb'
@@ -143,6 +144,18 @@ function getLiftedNoteAtPoint(point, stickyNotes, stageSize, activeMobileItem = 
             !(isMobileStage(stageSize) && MOBILE_HIDDEN_STICKY_NOTE_IDS.has(note.id)) &&
             isInsideStickyNote(point, getFirstPageViewportPosition(note.position), stageSize)
         ))
+}
+
+function HomeSceneReadySignal() {
+    useEffect(() => {
+        const frame = requestAnimationFrame(() => {
+            notifyHomeSceneReady()
+        })
+
+        return () => cancelAnimationFrame(frame)
+    }, [])
+
+    return null
 }
 
 
@@ -629,15 +642,18 @@ export default function Badge() {
                         <directionalLight position={[-3, -1, 2]} intensity={0.8} color="#bcd7ff" />
                         <Suspense fallback={null}>
                             {position && (
-                                <BadgeScene
-                                    screenPosition={position}
-                                    stageSize={stageSize}
-                                    badgeMode={badgeMode}
-                                    stickyNotes={stickyNotes}
-                                    mobileDeskMode={mobileDeskMode}
-                                    activeMobileItem={activeMobileItem}
-                                    activeStickyNoteId={activeStickyNoteId}
-                                />
+                                <>
+                                    <BadgeScene
+                                        screenPosition={position}
+                                        stageSize={stageSize}
+                                        badgeMode={badgeMode}
+                                        stickyNotes={stickyNotes}
+                                        mobileDeskMode={mobileDeskMode}
+                                        activeMobileItem={activeMobileItem}
+                                        activeStickyNoteId={activeStickyNoteId}
+                                    />
+                                    <HomeSceneReadySignal />
+                                </>
                             )}
                             <Environment preset="studio" environmentIntensity={0.2} />
                         </Suspense>

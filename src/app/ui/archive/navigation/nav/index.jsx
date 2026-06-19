@@ -19,10 +19,6 @@ const navItems = [
     title: "Projects",
     href: "/projects",
   },
-  {
-    title: "Demo",
-    href: "/demo",
-  },
 ]
 
 export default function index() {
@@ -55,7 +51,7 @@ export default function index() {
                     }
             </div>
             <div className={styles.footer}>
-                last updated feb 2025
+                last updated jun 2026
             </div>
         </div>
     </motion.div>
