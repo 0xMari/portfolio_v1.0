@@ -7,7 +7,7 @@ import Loader from "./ui/loader";
 
 
 export const metadata: Metadata = {
-  title: "mrajyt",
+  title: "0xMari",
   description: "portfolio",
 };
 

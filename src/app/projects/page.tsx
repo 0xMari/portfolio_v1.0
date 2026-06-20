@@ -11,7 +11,7 @@ const prjList = [
   {
     name: 'Aethr',
     year: '2026',
-    description: '[WIP] AI travel product, landing completed, currently focused on agents logic.',
+    description: 'AI travel product, landing completed, currently focused on agents logic.',
     category: ['dev', 'ai', 'agents'],
     href: 'https://aethr-travel.vercel.app/',
   },
