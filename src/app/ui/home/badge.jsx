@@ -8,7 +8,7 @@ import { MOBILE_HIDDEN_STICKY_NOTE_IDS, STICKY_NOTES } from './sticky_notes'
 import { notifyHomeSceneReady } from '@/app/ui/loader'
 
 
-const MODEL_PATH = '/badge7.glb'
+const MODEL_PATH = '/badge8.glb'
 const INITIAL_Y = -0.62
 const SPRING_STIFFNESS = 0.09
 const SPRING_DAMPING = 0.78

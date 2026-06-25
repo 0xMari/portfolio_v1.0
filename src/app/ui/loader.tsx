@@ -119,7 +119,8 @@ export default function Loader() {
 
   if (!isVisible) return null
 
-  const percentage = Math.min(100, Math.max(0, Math.round(displayProgress)))
+  const clampedProgress = Math.min(100, Math.max(0, displayProgress))
+  const percentage = Math.round(clampedProgress)
 
   return (
     <div
@@ -140,8 +141,8 @@ export default function Loader() {
 
       <div className='absolute bottom-0 left-0 h-16 w-full overflow-hidden'>
         <div
-          className='absolute bottom-0 left-0 h-full bg-[#f0f0f0] transition-[width] duration-300 ease-out'
-          style={{ width: `${displayProgress}%` }}
+          className='absolute bottom-0 left-0 h-full bg-[#f0f0f0]'
+          style={{ width: `${clampedProgress}%` }}
         />
         <div className='absolute bottom-4 right-5 z-10 font-mono text-xl font-semibold leading-none text-[#f0f0f0] mix-blend-difference sm:right-8 sm:text-2xl'>
           {percentage}%

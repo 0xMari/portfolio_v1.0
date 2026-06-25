@@ -73,7 +73,9 @@ export default function Page() {
               </div>
             </div>
           </div>
-          <div className='min-h-48 w-full border border-blue-500 lg:w-[36%]'>img</div>
+          <div className='min-h-48 w-full border border-blue-500 lg:w-[36%]'>
+            <img src='/imgs/IMG_7921.png'/>
+          </div>
         </div>
       </section>
       <section className='mx-auto w-full max-w-6xl border border-black'>

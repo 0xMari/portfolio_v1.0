@@ -6,7 +6,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { StickyNotes } from './sticky_notes'
 
-const MODEL_PATH = '/badge7.glb'
+const MODEL_PATH = '/badge8.glb'
 const CORD_SEGMENTS = 28
 const CORD_RADIUS = 0.01
 const CORD_RADIAL_SEGMENTS = 8
