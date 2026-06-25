@@ -73,7 +73,7 @@ export default function Page() {
               </div>
             </div>
           </div>
-          <div className='min-h-48 w-full border border-blue-500 lg:w-[36%]'>
+          <div className='min-h-48 w-full lg:w-[36%]'>
             <img src='/imgs/IMG_7921.png'/>
           </div>
         </div>
