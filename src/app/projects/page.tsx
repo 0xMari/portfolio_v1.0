@@ -6,7 +6,7 @@ const prjList = [
     year:'2026',
     description: 'Interactive 3D blind box experiment with a full Blender-to-web pipeline.',
     category: ['3d', 'blender', 'dev'],
-    href: 'https://github.com/0xMari/blindbox',
+    href: 'https://little-things-sigma.vercel.app/',
   },
   {
     name: 'Aethr',
@@ -20,7 +20,7 @@ const prjList = [
     year: '2026',
     description: 'Procedural WebGL world built around playful exploration and 3D systems.',
     category: ['webgl','3d','dev', 'procedural world'],
-    href: 'https://github.com/0xMari/fairytown',
+    href: 'https://fairytown.vercel.app/',
   },
   {
     name: 'Blobs',
